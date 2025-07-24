@@ -2,4 +2,4 @@ customtkinter
 pydub
 moviepy
 tkinter
-pathlib 
+ncmdump
