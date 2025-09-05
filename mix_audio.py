@@ -19,24 +19,64 @@ class BatchMixerApp(ctk.CTk):
         self.vocal_file = ctk.StringVar()
         self.instr_file = ctk.StringVar()
         self.status_text = ctk.StringVar(value="准备就绪")
+        self.vocal_volume = ctk.DoubleVar(value=2.0)
+        self.instr_volume = ctk.DoubleVar(value=-2.0)
 
         # --- UI 部分 ---
         ctk.CTkLabel(self, text="人声音频文件夹路径：").pack(pady=(15, 5))
         ctk.CTkEntry(self, textvariable=self.vocal_dir, width=450).pack()
-        ctk.CTkButton(self, text="📁 浏览目录", command=self.select_vocal_dir).pack(pady=5)
+        ctk.CTkButton(self, text="📁 浏览目录", command=self.select_vocal_dir).pack(
+            pady=5
+        )
 
         ctk.CTkLabel(self, text="或选择单个人声音频文件：").pack(pady=(15, 5))
         ctk.CTkEntry(self, textvariable=self.vocal_file, width=450).pack()
-        ctk.CTkButton(self, text="📄 浏览文件", command=self.select_vocal_file).pack(pady=5)
+        ctk.CTkButton(self, text="📄 浏览文件", command=self.select_vocal_file).pack(
+            pady=5
+        )
 
         ctk.CTkLabel(self, text="伴奏音频文件：").pack(pady=(15, 5))
         ctk.CTkEntry(self, textvariable=self.instr_file, width=450).pack()
-        ctk.CTkButton(self, text="🎼 选择伴奏文件", command=self.select_instr_file).pack(pady=5)
+        ctk.CTkButton(
+            self, text="🎼 选择伴奏文件", command=self.select_instr_file
+        ).pack(pady=5)
 
-        ctk.CTkButton(self, text="🚀 开始混音", command=self.start_batch_mix).pack(pady=(20, 10))
-        ctk.CTkButton(self, text="🗑️ 清空所有_mix文件", fg_color="red", command=self.clean_mix_files).pack(pady=5)
+        # 音量控制
+        volume_frame = ctk.CTkFrame(self)
+        volume_frame.pack(pady=10)
+        ctk.CTkLabel(volume_frame, text="人声音量 (dB):").pack(side="left", padx=5)
+        ctk.CTkSlider(volume_frame, from_=-10, to=10, variable=self.vocal_volume).pack(
+            side="left"
+        )
+        ctk.CTkLabel(volume_frame, textvariable=self.vocal_volume).pack(
+            side="left", padx=5
+        )
 
-        self.status_label = ctk.CTkLabel(self, textvariable=self.status_text, text_color="green", wraplength=500, justify="left")
+        ctk.CTkLabel(volume_frame, text="伴奏音量 (dB):").pack(side="left", padx=5)
+        ctk.CTkSlider(volume_frame, from_=-10, to=10, variable=self.instr_volume).pack(
+            side="left"
+        )
+        ctk.CTkLabel(volume_frame, textvariable=self.instr_volume).pack(
+            side="left", padx=5
+        )
+
+        ctk.CTkButton(self, text="🚀 开始混音", command=self.start_batch_mix).pack(
+            pady=(20, 10)
+        )
+        ctk.CTkButton(
+            self,
+            text="🗑️ 清空所有_mix文件",
+            fg_color="red",
+            command=self.clean_mix_files,
+        ).pack(pady=5)
+
+        self.status_label = ctk.CTkLabel(
+            self,
+            textvariable=self.status_text,
+            text_color="green",
+            wraplength=500,
+            justify="left",
+        )
         self.status_label.pack(pady=15)
 
     def select_vocal_dir(self):
@@ -46,13 +86,17 @@ class BatchMixerApp(ctk.CTk):
             self.vocal_file.set("")  # 清空单文件选择
 
     def select_vocal_file(self):
-        file = filedialog.askopenfilename(title="选择单个人声音频", filetypes=[("音频文件", "*.wav *.mp3 *.flac")])
+        file = filedialog.askopenfilename(
+            title="选择单个人声音频", filetypes=[("音频文件", "*.wav *.mp3 *.flac")]
+        )
         if file:
             self.vocal_file.set(file)
             self.vocal_dir.set("")  # 清空文件夹选择
 
     def select_instr_file(self):
-        path = filedialog.askopenfilename(filetypes=[("音频文件", "*.wav *.mp3 *.flac")])
+        path = filedialog.askopenfilename(
+            filetypes=[("音频文件", "*.wav *.mp3 *.flac")]
+        )
         if path:
             self.instr_file.set(path)
 
@@ -71,7 +115,11 @@ class BatchMixerApp(ctk.CTk):
             base_folder = os.path.dirname(vocal_file)
         elif os.path.isdir(folder):
             supported_ext = [".wav", ".mp3", ".flac"]
-            files = [os.path.join(folder, f) for f in os.listdir(folder) if os.path.splitext(f)[1].lower() in supported_ext]
+            files = [
+                os.path.join(folder, f)
+                for f in os.listdir(folder)
+                if os.path.splitext(f)[1].lower() in supported_ext
+            ]
             base_folder = folder
         else:
             messagebox.showerror("错误", "请选择人声音频文件或文件夹")
@@ -83,7 +131,9 @@ class BatchMixerApp(ctk.CTk):
 
         # 加载伴奏音频
         try:
-            instr_audio = AudioSegment.from_file(instr).set_frame_rate(44100).set_channels(2)
+            instr_audio = (
+                AudioSegment.from_file(instr).set_frame_rate(44100).set_channels(2)
+            )
         except Exception as e:
             self.status_text.set(f"❌ 加载伴奏失败：{e}")
             return
@@ -96,13 +146,17 @@ class BatchMixerApp(ctk.CTk):
                 continue  # 跳过已处理文件
 
             try:
-                self.status_text.set(f"🔄 [{i}/{total}] 正在处理：{os.path.basename(f)}")
+                self.status_text.set(
+                    f"🔄 [{i}/{total}] 正在处理：{os.path.basename(f)}"
+                )
                 self.update()
 
                 vocal = AudioSegment.from_file(f).set_frame_rate(44100).set_channels(2)
                 min_len = min(len(vocal), len(instr_audio))
-                vocal = vocal[:min_len] + 2  # 提升人声音量
-                instr_trim = instr_audio[:min_len] - 2  # 降低伴奏音量
+                vocal = vocal[:min_len] + self.vocal_volume.get()  # 提升人声音量
+                instr_trim = (
+                    instr_audio[:min_len] + self.instr_volume.get()
+                )  # 降低伴奏音量
 
                 mixed = instr_trim.overlay(vocal)
                 output_path = os.path.join(base_folder, f"{name}_mix.wav")
@@ -113,7 +167,9 @@ class BatchMixerApp(ctk.CTk):
                 success += 1
                 # 如果是单文件，弹窗提示
                 if len(files) == 1:
-                    messagebox.showinfo("混音完成", f"混音已完成，输出文件：\n{output_path}")
+                    messagebox.showinfo(
+                        "混音完成", f"混音已完成，输出文件：\n{output_path}"
+                    )
             except Exception as e:
                 self.status_text.set(f"❌ 错误处理 {f}：{e}")
                 self.update()
@@ -123,18 +179,25 @@ class BatchMixerApp(ctk.CTk):
 
     def clean_mix_files(self):
         folder = self.vocal_dir.get().strip()
-        if not os.path.isdir(folder):
-            messagebox.showerror("错误", "请先选择有效的文件夹用于清理")
+        vocal_file = self.vocal_file.get().strip()
+
+        path_to_clean = ""
+        if os.path.isdir(folder):
+            path_to_clean = folder
+        elif os.path.isfile(vocal_file):
+            path_to_clean = os.path.dirname(vocal_file)
+        else:
+            messagebox.showerror("错误", "请先选择有效的文件夹或文件用于清理")
             return
 
         deleted = 0
-        for f in os.listdir(folder):
+        for f in os.listdir(path_to_clean):
             if f.endswith("_mix.wav"):
                 try:
-                    os.remove(os.path.join(folder, f))
+                    os.remove(os.path.join(path_to_clean, f))
                     deleted += 1
-                except:
-                    pass
+                except OSError as e:
+                    print(f"无法删除文件 {f}: {e}")
 
         self.status_text.set(f"🗑️ 已清除 {deleted} 个 *_mix.wav 文件")
         self.update()
